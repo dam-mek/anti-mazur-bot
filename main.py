@@ -1,9 +1,9 @@
-import config
 import telebot
 import texts
+import os
 
 
-bot = telebot.TeleBot(config.TOKEN)
+bot = telebot.TeleBot(os.environ.get('TOKEN_AMB'))
 
 
 @bot.message_handler(commands=['start'])
