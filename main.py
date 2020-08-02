@@ -2,7 +2,6 @@ from flask import Flask, request
 import telebot
 import texts
 import os
-import config
 
 
 server = Flask(__name__)
