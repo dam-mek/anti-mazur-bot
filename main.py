@@ -1,9 +1,13 @@
+from flask import Flask, request
 import telebot
 import texts
 import os
+import config
 
 
-bot = telebot.TeleBot(os.environ.get('TOKEN_AMB'))
+server = Flask(__name__)
+token = os.environ.get('TOKEN_AMB')
+bot = telebot.TeleBot(token)
 
 
 @bot.message_handler(commands=['start'])
@@ -22,16 +26,25 @@ def dialogue(message):
         bot.send_message(message.chat.id, texts.cadillac)
     elif message.text.lower() in {'baby', 'малышка'}:
         bot.send_message(message.chat.id, texts.baby)
-    elif message.text.lower().replace('ё', 'е') in {'ice', 'лед'}:
+    elif message.text.lower().replace('ё', 'е') in {'ice', 'лед', 'айс'}:
         bot.send_message(message.chat.id, texts.ice)
     else:
         bot.send_sticker(message.chat.id, 'CAACAgIAAxkBAAM3Xx3eHjxLZMGi9GQCWRozmRovnAsAAh4DAAKNSjADcnw1sWQ7ES8aBA')
     print(message)
 
 
-@bot.message_handler(content_types=['sticker'])
-def start_message(message):
-    print(message)
+@server.route('/' + token, methods=['POST'])
+def getMessage():
+    bot.process_new_updates([telebot.types.Update.de_json(request.stream.read().decode("utf-8"))])
+    return "!", 200
 
 
-bot.polling()
+@server.route("/")
+def webhook():
+    bot.remove_webhook()
+    bot.set_webhook(url='https://anti-mazur.herokuapp.com/' + token)
+    return "!", 200
+
+
+if __name__ == '__main__':
+    server.run(host="0.0.0.0", port=int(os.environ.get('PORT', 5000)))
