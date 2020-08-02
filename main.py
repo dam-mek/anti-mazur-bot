@@ -6,8 +6,6 @@ import os
 
 server = Flask(__name__)
 token = os.environ.get('TOKEN_AMB')
-import config
-token = config.TOKEN
 bot = telebot.TeleBot(token)
 
 
