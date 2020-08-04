@@ -3,3 +3,4 @@ config.py
 __pycache__
 requirements.txt
 test.py
+test_bot.py

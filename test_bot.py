@@ -1,14 +1,11 @@
-from flask import Flask, request
 import telebot
 import texts
-import os
-import messages
 import time
+import messages
+import config
 import markups
 
-
-server = Flask(__name__)
-token = os.environ.get('TOKEN_AMB')
+token = config.TOKEN
 bot = telebot.TeleBot(token)
 
 
@@ -58,7 +55,7 @@ def log(msg):
           'last name: ', msg.from_user.last_name, '\n',
           msg.text,
           sep='')
-
+    
 
 def ask_text(message):
     log(message)
@@ -82,18 +79,6 @@ def ask_text(message):
         bot.send_message(message.chat.id, message.text)
 
 
-@server.route('/' + token, methods=['POST'])
-def getMessage():
-    bot.process_new_updates([telebot.types.Update.de_json(request.stream.read().decode("utf-8"))])
-    return 'Ну типа АнтиМазур запущен', 200
-
-
-@server.route("/")
-def webhook():
-    bot.remove_webhook()
-    bot.set_webhook(url='https://anti-mazur.herokuapp.com/' + token)
-    return 'Ну типа АнтиМазур запущен, а я нужен для вебхука', 200
-
-
 if __name__ == '__main__':
-    server.run(host="0.0.0.0", port=int(os.environ.get('PORT', 5000)))
+    # bot.remove_webhook()
+    bot.polling()
