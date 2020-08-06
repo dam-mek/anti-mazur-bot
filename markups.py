@@ -7,3 +7,5 @@ source_markup_btn3 = types.KeyboardButton('/about')
 source_markup.add(source_markup_btn1)
 source_markup.add(source_markup_btn2)
 source_markup.add(source_markup_btn3)
+
+none_markup = types.ReplyKeyboardRemove()
