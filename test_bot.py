@@ -1,6 +1,6 @@
-# from flask import Flask, request
-# from os import environ
-from time import gmtime
+from flask import Flask, request
+from os import environ
+from time import gmtime, asctime
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 import smtplib
@@ -11,14 +11,14 @@ import messages
 import markups
 
 # TODO
-#  1) Синонимы
-#  2) Логирование
+#  1) Синонимы (допилить чуть Engine)
+#  2) Логирование (logging)
+#  3) Приколы в messages.video
+#  4) Залить на свой гит
 
-# server = Flask(__name__)
-# token = environ.get('TOKEN_AMB')
-import config
-password = config.PASSWORD
-token = config.TOKEN
+server = Flask(__name__)
+token = environ.get('TOKEN_AMB')
+password = environ.get('PASSWORD_AMB')
 bot = telebot.TeleBot(token)
 
 
@@ -44,7 +44,7 @@ def help_message(message):
 @bot.message_handler(commands=['about'])
 def about_message(message):
     with open('log.log', 'a') as file:
-        file.write('INFO:HELP:' + create_log_str(message) + '\n')
+        file.write('INFO:ABOUT:' + create_log_str(message) + '\n')
     bot.send_message(chat_id=message.chat.id, text=messages.ABOUT, reply_markup=markups.source_markup,
                      parse_mode='markdown')
 
@@ -52,8 +52,44 @@ def about_message(message):
 @bot.message_handler(commands=['feedback'])
 def feedback_message(message):
     with open('log.log', 'a') as file:
-        file.write('INFO:HELP:' + create_log_str(message) + '\n')
+        file.write('INFO:FEED:' + create_log_str(message) + '\n')
     bot.send_message(chat_id=message.chat.id, text=messages.FEEDBACK, reply_markup=markups.source_markup,
+                     parse_mode='markdown')
+
+
+@bot.message_handler(commands=['log'])
+def feedback_message(message):
+    if message.from_user.username != 'dam_mek':
+        bot.send_message(chat_id=message.chat.id, text='*Ты чо удумал?!*', reply_markup=markups.source_markup,
+                         parse_mode='markdown')
+        with open('log.log', 'a') as file:
+            file.write('INFO:LOG:' + create_log_str(message) + '\n')
+        return
+    filename = 'log.log'
+    with open(filename, 'r') as file:
+        global password
+        email = 'denisov_aa@gkl-kemerovo.ru'
+        mail_account = smtplib.SMTP('smtp.gmail.com', 587)
+        mail_account.starttls()
+        mail_account.login(user=email, password=password)
+
+        msg = MIMEMultipart()
+        msg['From'] = email
+        msg['To'] = email
+        msg['Subject'] = 'Logging AntiMazur bot!'
+        f = MIMEText(file.read(), _subtype='plain')
+        f.add_header('Content-Disposition', 'attachment', filename=filename)
+        msg.attach(f)
+
+        text_message = 'Логи за ' + asctime()
+        msg.attach(MIMEText(text_message, 'plain'))
+        mail_account.send_message(from_addr=email, to_addrs=msg['To'], msg=msg)
+        mail_account.quit()
+        bot.send_message(chat_id=message.chat.id, text='Всё сделано, Мой Господин', reply_markup=markups.source_markup,
+                         parse_mode='markdown')
+    with open(filename, 'w') as file:
+        file.write('======== LOGGING FILE FOR SOMELOG ======\n')
+    bot.send_message(chat_id=message.chat.id, text='Всё сделано, Мой Господин', reply_markup=markups.source_markup,
                      parse_mode='markdown')
 
 
@@ -74,7 +110,7 @@ def dialogue(message):
 @bot.message_handler(content_types=['video_note'])
 def video(message):
     with open('log.log', 'a') as file:
-        file.write('VIDEO:DIAL:' + create_log_str(message) + '\n')
+        file.write('INFO:VIDEO:' + create_log_str(message) + '\n')
     bot.send_message(chat_id=message.chat.id, text=messages.video, reply_markup=markups.source_markup,
                      parse_mode='markdown')
 
@@ -129,9 +165,9 @@ def do_prikol(msg):
 def send_mail(message):
     global password
     email = 'denisov_aa@gkl-kemerovo.ru'
-    server = smtplib.SMTP('smtp.gmail.com', 587)
-    server.starttls()
-    server.login(user=email, password=password)
+    mail_account = smtplib.SMTP('smtp.gmail.com', 587)
+    mail_account.starttls()
+    mail_account.login(user=email, password=password)
 
     msg = MIMEMultipart()
     msg['From'] = email
@@ -139,8 +175,8 @@ def send_mail(message):
     msg['Subject'] = 'Logging. ' + message.from_user.username + ' sent a message to the bot!'
     text_message = create_log_str(message)
     msg.attach(MIMEText(text_message, 'plain'))
-    server.send_message(from_addr=email, to_addrs=msg['To'], msg=msg)
-    server.quit()
+    mail_account.send_message(from_addr=email, to_addrs=msg['To'], msg=msg)
+    mail_account.quit()
 
 
 def create_log_str(msg):
@@ -157,5 +193,4 @@ def create_log_str(msg):
 
 
 if __name__ == '__main__':
-    bot.remove_webhook()
     bot.polling()
