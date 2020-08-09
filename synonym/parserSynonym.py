@@ -37,12 +37,23 @@ app.add_site('https://synonymonline.ru', ExtraStaff.post0, ExtraStaff.convert_li
 app.add_site('https://sinonim.org', ExtraStaff.post1, ExtraStaff.convert_link1)
 
 
+def easter_egg(word):
+    word = word.lower().replace('ё', 'е')
+    if word in {'леня', 'леонид', 'ленчик', 'калачиков', 'чичиков'}:
+        return 'Крутой'
+    if word in {'антон', 'антоша', 'антошка', 'антончик', 'шевцов'}:
+        return 'Лох'
+
+
 def main(text):
     new_text = ''
     list_text = convert_string2list(text)
     for i in range(len(list_text)):
         symbols = list_text[i]
-        if symbols.isalpha() and len(symbols) > 2:
+        egg = easter_egg(symbols)
+        if egg is not None:
+            added = egg
+        elif symbols.isalpha() and len(symbols) > 2:
             # print(symbols)
             syn = app.get(symbols)
             if symbols.isupper():

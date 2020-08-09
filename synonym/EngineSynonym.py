@@ -573,7 +573,7 @@ class SynonymOnline(FunctionsOfParsingWord, FunctionsOfParsingSyn):
                     error = e
                     print('\033[31m' + str(error))
             if site.status_code == 404:
-                print('\033[31mError:', word, i)
+                # print('\033[31mError:', word, i)
                 continue
             synonyms = SynonymOnline.posts[i](site.text)
             if synonyms is not None:

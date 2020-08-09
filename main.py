@@ -1,72 +1,96 @@
-from synonym import parserSynonym
 from flask import Flask, request
+from os import environ
+from time import gmtime
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+import smtplib
 import telebot
-import texts
-import os
+
+from synonym import parserSynonym
 import messages
-import time
 import markups
 
 # TODO
-#  1) Синонимы
-#  2) Логирование
+#  1) Синонимы (допилить чуть Engine)
+#  2) Логирование (logging)
+#  3) Приколы в messages.video
 
 server = Flask(__name__)
-token = os.environ.get('TOKEN_AMB')
+token = environ.get('TOKEN_AMB')
+password = environ.get('PASSWORD_AMB')
 bot = telebot.TeleBot(token)
 
 
 @bot.message_handler(commands=['start'])
 def start_message(message):
-    log(message)
-    bot.send_message(chat_id=message.chat.id, text=messages.HELLO, reply_markup=markups.source_markup)
+    send_mail(message)
+    with open('log.log', 'a') as file:
+        file.write('INFO:START:' + create_log_str(message) + '\n')
+    bot.send_message(chat_id=message.chat.id, text=messages.START, reply_markup=markups.source_markup,
+                     parse_mode='markdown')
+    # bot.send_sticker(chat_id=message.chat.id,
+    # data='CAACAgIAAxkBAAM3Xx3eHjxLZMGi9GQCWRozmRovnAsAAh4DAAKNSjADcnw1sWQ7ES8aBA')
 
 
 @bot.message_handler(commands=['help'])
 def help_message(message):
-    log(message)
-    # bot.answer_callback_query(text='fuck')
-    bot.send_message(chat_id=message.chat.id, text=messages.HELP, reply_markup=markups.source_markup)
+    with open('log.log', 'a') as file:
+        file.write('INFO:HELP:' + create_log_str(message) + '\n')
+    bot.send_message(chat_id=message.chat.id, text=messages.HELP, reply_markup=markups.source_markup,
+                     parse_mode='markdown')
+
+
+@bot.message_handler(commands=['about'])
+def about_message(message):
+    with open('log.log', 'a') as file:
+        file.write('INFO:HELP:' + create_log_str(message) + '\n')
+    bot.send_message(chat_id=message.chat.id, text=messages.ABOUT, reply_markup=markups.source_markup,
+                     parse_mode='markdown')
+
+
+@bot.message_handler(commands=['feedback'])
+def feedback_message(message):
+    with open('log.log', 'a') as file:
+        file.write('INFO:HELP:' + create_log_str(message) + '\n')
+    bot.send_message(chat_id=message.chat.id, text=messages.FEEDBACK, reply_markup=markups.source_markup,
+                     parse_mode='markdown')
 
 
 @bot.message_handler(content_types=['text'])
 def dialogue(message):
-    log(message)
+    with open('log.log', 'a') as file:
+        file.write('INFO:DIAL:' + create_log_str(message) + '\n')
     if do_prikol(message):
         return
     if message.text.lower() == 'перевести текст в синонимы':
-        msg = bot.send_message(chat_id=message.chat.id, text=messages.ASK_TEXT, reply_markup=markups.none_markup)
+        msg = bot.send_message(chat_id=message.chat.id, text=messages.ASK_TEXT, reply_markup=markups.none_markup,
+                               parse_mode='markdown')
         bot.register_next_step_handler(msg, ask_text)
     else:
-        bot.send_sticker(chat_id=message.chat.id,
-                         data='CAACAgIAAxkBAAM3Xx3eHjxLZMGi9GQCWRozmRovnAsAAh4DAAKNSjADcnw1sWQ7ES8aBA')
+        help_message(message)
 
 
-def log(msg):
-    date = msg.date
-    date = '{}.{}.{} {}:{}:{}'.format(time.gmtime(date).tm_mday, time.gmtime(date).tm_mon, time.gmtime(date).tm_year,
-                                      time.gmtime(date).tm_hour, time.gmtime(date).tm_min, time.gmtime(date).tm_sec)
-    print('message id: ', msg.message_id, '\n',
-          'date: ', date, '\n',
-          'user id: ', msg.from_user.id, '\n',
-          'username: ', msg.from_user.username, '\n',
-          'first name: ', msg.from_user.first_name, '\n',
-          'last name: ', msg.from_user.last_name, '\n',
-          msg.text,
-          sep='')
+@bot.message_handler(content_types=['video_note'])
+def video(message):
+    with open('log.log', 'a') as file:
+        file.write('VIDEO:DIAL:' + create_log_str(message) + '\n')
+    bot.send_message(chat_id=message.chat.id, text=messages.video, reply_markup=markups.source_markup,
+                     parse_mode='markdown')
 
 
 def ask_text(message):
-    log(message)
+    with open('log.log', 'a') as file:
+        file.write('INFO:ASK:' + create_log_str(message) + '\n')
     if message.text is None:
-        msg = bot.send_message(chat_id=message.chat.id, text=messages.ASK_EXACTLY_TEXT)
+        msg = bot.send_message(chat_id=message.chat.id, text=messages.ASK_EXACTLY_TEXT, parse_mode='markdown')
         bot.register_next_step_handler(msg, ask_text)
         return
-    msg = bot.send_message(chat_id=message.chat.id, text='Сделано: 0%')
+    msg = bot.send_message(chat_id=message.chat.id, text='Сделано: *0%*', parse_mode='markdown')
     generator_text = parserSynonym.main(message.text)
     text = next(generator_text)
     while type(text) is int:
-        bot.edit_message_text(chat_id=message.chat.id, message_id=msg.message_id, text='Сделано: ' + str(text) + '%')
+        bot.edit_message_text(chat_id=message.chat.id, message_id=msg.message_id, text=f'Сделано: *{text}%*',
+                              parse_mode='markdown')
         text_tmp = next(generator_text)
         while text_tmp == text:
             text_tmp = next(generator_text)
@@ -74,7 +98,8 @@ def ask_text(message):
     bot.delete_message(chat_id=message.chat.id, message_id=msg.message_id)
     bot.send_message(chat_id=message.chat.id, text=text,
                      reply_markup=markups.source_markup)
-    print(text)
+    with open('log.log', 'a') as file:
+        file.write(f'INFO:RESULT:MSG_ID-{message.message_id}:' + text + '\n')
 
 
 def do_prikol(msg):
@@ -84,17 +109,56 @@ def do_prikol(msg):
     :param msg: <class 'telebot.types.Message'>
     :return: bool
     """
-    if msg.text.lower() in {'suck', 'пососи'}:
-        bot.send_message(msg.chat.id, texts.suck)
-    elif msg.text.lower() in {'кадиллак', 'кадилак', 'cadillac', 'cadilac'}:
-        bot.send_message(msg.chat.id, texts.cadillac)
-    elif msg.text.lower() in {'baby', 'малышка'}:
-        bot.send_message(msg.chat.id, texts.baby)
-    elif msg.text.lower() in {'ice', 'лед', 'лёд', 'айс'}:
-        bot.send_message(msg.chat.id, texts.ice)
+    text = msg.text.lower()
+    if text in {'suck', 'пососи'}:
+        bot.send_message(msg.chat.id, messages.suck)
+    elif text in {'кадиллак', 'кадилак', 'cadillac', 'cadilac'}:
+        bot.send_message(msg.chat.id, messages.cadillac)
+    elif text in {'baby', 'малышка'}:
+        bot.send_message(msg.chat.id, messages.baby)
+    elif text in {'ice', 'лед', 'лёд', 'айс'}:
+        bot.send_message(msg.chat.id, messages.ice)
+    elif text in {'плодотворная дебютная идея'}:
+        bot.send_message(msg.chat.id, messages.ostap)
     else:
         return False
     return True
+
+
+def send_mail(message):
+    global password
+    email = 'denisov_aa@gkl-kemerovo.ru'
+    server = smtplib.SMTP('smtp.gmail.com', 587)
+    server.starttls()
+    server.login(user=email, password=password)
+
+    msg = MIMEMultipart()
+    msg['From'] = email
+    msg['To'] = email
+    msg['Subject'] = 'Logging. ' + message.from_user.username + ' sent a message to the bot!'
+    text_message = create_log_str(message)
+    msg.attach(MIMEText(text_message, 'plain'))
+    server.send_message(from_addr=email, to_addrs=msg['To'], msg=msg)
+    server.quit()
+
+
+def create_log_str(msg):
+    date = msg.date
+    date = '{}.{}.{} {}:{}:{}'.format(str(gmtime(date).tm_mday).rjust(2, '0'), str(gmtime(date).tm_mon).rjust(2, '0'),
+                                      str(gmtime(date).tm_year).rjust(2, '0'), str(gmtime(date).tm_hour).rjust(2, '0'),
+                                      str(gmtime(date).tm_min).rjust(2, '0'), str(gmtime(date).tm_sec).rjust(2, '0'))
+
+    log_str = 'message_id:{}|date:{}|used_id:{}|username:{}|first_name:{}|last_name:{}|text:{}'.format(
+        msg.message_id, date, msg.from_user.id, msg.from_user.username,
+        msg.from_user.first_name, msg.from_user.last_name, msg.text
+    )
+    return log_str
+
+
+if __name__ == '__main__':
+    bot.remove_webhook()
+    bot.polling()
+
 
 
 @server.route('/' + token, methods=['POST'])
@@ -111,4 +175,4 @@ def webhook():
 
 
 if __name__ == '__main__':
-    server.run(host="0.0.0.0", port=int(os.environ.get('PORT', 5000)))
+    server.run(host="0.0.0.0", port=int(environ.get('PORT', 5000)))
