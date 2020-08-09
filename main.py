@@ -85,8 +85,6 @@ def feedback_message(message):
         msg.attach(MIMEText(text_message, 'plain'))
         mail_account.send_message(from_addr=email, to_addrs=msg['To'], msg=msg)
         mail_account.quit()
-        bot.send_message(chat_id=message.chat.id, text='Всё сделано, Мой Господин', reply_markup=markups.source_markup,
-                         parse_mode='markdown')
     with open(filename, 'w') as file:
         file.write('======== LOGGING FILE FOR SOMELOG ======\n')
     bot.send_message(chat_id=message.chat.id, text='Всё сделано, Мой Господин', reply_markup=markups.source_markup,
