@@ -3,4 +3,3 @@ config.py
 __pycache__
 requirements.txt
 test.py
-log.log
