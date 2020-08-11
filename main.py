@@ -7,8 +7,7 @@ import smtplib
 import telebot
 
 from synonym import parserSynonym
-import messages
-import markups
+from stuff import markups, messages
 
 # TODO
 #  1) Синонимы (допилить чуть Engine)
@@ -16,17 +15,16 @@ import markups
 #  3) Приколы в messages.video
 #  4) Залить на свой гит
 
-server = Flask(__name__)
 token = environ.get('TOKEN_AMB')
 password = environ.get('PASSWORD_AMB')
+server = Flask(__name__)
 bot = telebot.TeleBot(token)
 
 
 @bot.message_handler(commands=['start'])
 def start_message(message):
     send_mail(message)
-    with open('log.log', 'a') as file:
-        file.write('INFO:START:' + create_log_str(message) + '\n')
+    log(message)
     bot.send_message(chat_id=message.chat.id, text=messages.START, reply_markup=markups.source_markup,
                      parse_mode='markdown')
     # bot.send_sticker(chat_id=message.chat.id,
@@ -35,24 +33,21 @@ def start_message(message):
 
 @bot.message_handler(commands=['help'])
 def help_message(message):
-    with open('log.log', 'a') as file:
-        file.write('INFO:HELP:' + create_log_str(message) + '\n')
+    log(message)
     bot.send_message(chat_id=message.chat.id, text=messages.HELP, reply_markup=markups.source_markup,
                      parse_mode='markdown')
 
 
 @bot.message_handler(commands=['about'])
 def about_message(message):
-    with open('log.log', 'a') as file:
-        file.write('INFO:ABOUT:' + create_log_str(message) + '\n')
+    log(message)
     bot.send_message(chat_id=message.chat.id, text=messages.ABOUT, reply_markup=markups.source_markup,
                      parse_mode='markdown')
 
 
 @bot.message_handler(commands=['feedback'])
 def feedback_message(message):
-    with open('log.log', 'a') as file:
-        file.write('INFO:FEED:' + create_log_str(message) + '\n')
+    log(message)
     bot.send_message(chat_id=message.chat.id, text=messages.FEEDBACK, reply_markup=markups.source_markup,
                      parse_mode='markdown')
 
@@ -62,8 +57,7 @@ def feedback_message(message):
     if message.from_user.username != 'dam_mek':
         bot.send_message(chat_id=message.chat.id, text='*Ты чо удумал?!*', reply_markup=markups.source_markup,
                          parse_mode='markdown')
-        with open('log.log', 'a') as file:
-            file.write('INFO:LOG:' + create_log_str(message) + '\n')
+        log(message)
         return
     filename = 'log.log'
     with open(filename, 'r') as file:
@@ -93,8 +87,7 @@ def feedback_message(message):
 
 @bot.message_handler(content_types=['text'])
 def dialogue(message):
-    with open('log.log', 'a') as file:
-        file.write('INFO:DIAL:' + create_log_str(message) + '\n')
+    log(message)
     if do_prikol(message):
         return
     if message.text.lower() == 'перевести текст в синонимы':
@@ -107,15 +100,13 @@ def dialogue(message):
 
 @bot.message_handler(content_types=['video_note'])
 def video(message):
-    with open('log.log', 'a') as file:
-        file.write('INFO:VIDEO:' + create_log_str(message) + '\n')
+    log(message)
     bot.send_message(chat_id=message.chat.id, text=messages.video, reply_markup=markups.source_markup,
                      parse_mode='markdown')
 
 
 def ask_text(message):
-    with open('log.log', 'a') as file:
-        file.write('INFO:ASK:' + create_log_str(message) + '\n')
+    log(message)
     if message.text is None:
         msg = bot.send_message(chat_id=message.chat.id, text=messages.ASK_EXACTLY_TEXT, parse_mode='markdown')
         bot.register_next_step_handler(msg, ask_text)
@@ -124,17 +115,17 @@ def ask_text(message):
     generator_text = parserSynonym.main(message.text)
     text = next(generator_text)
     while type(text) is int:
-        bot.edit_message_text(chat_id=message.chat.id, message_id=msg.message_id, text=f'Сделано: *{text}%*',
-                              parse_mode='markdown')
         text_tmp = next(generator_text)
         while text_tmp == text:
             text_tmp = next(generator_text)
         text = text_tmp
+        bot.edit_message_text(chat_id=message.chat.id, message_id=msg.message_id, text=f'Сделано: *{text}%*',
+                              parse_mode='markdown')
     bot.delete_message(chat_id=message.chat.id, message_id=msg.message_id)
     bot.send_message(chat_id=message.chat.id, text=text,
                      reply_markup=markups.source_markup)
     with open('log.log', 'a') as file:
-        file.write(f'INFO:RESULT:MSG_ID-{message.message_id}:' + text + '\n')
+        file.write(f'RESULT:MSG_ID-{message.message_id}:' + text + '\n')
 
 
 def do_prikol(msg):
@@ -177,15 +168,20 @@ def send_mail(message):
     mail_account.quit()
 
 
-def create_log_str(msg):
-    date = msg.date
+def log(message):
+    with open('log.log', 'a') as file:
+        file.write(create_log_str(message) + '\n')
+
+
+def create_log_str(message):
+    date = message.date
     date = '{}.{}.{} {}:{}:{}'.format(str(gmtime(date).tm_mday).rjust(2, '0'), str(gmtime(date).tm_mon).rjust(2, '0'),
                                       str(gmtime(date).tm_year).rjust(2, '0'), str(gmtime(date).tm_hour).rjust(2, '0'),
                                       str(gmtime(date).tm_min).rjust(2, '0'), str(gmtime(date).tm_sec).rjust(2, '0'))
 
     log_str = 'message_id:{}|date:{}|used_id:{}|username:{}|first_name:{}|last_name:{}|text:{}'.format(
-        msg.message_id, date, msg.from_user.id, msg.from_user.username,
-        msg.from_user.first_name, msg.from_user.last_name, msg.text
+        message.message_id, date, message.from_user.id, message.from_user.username,
+        message.from_user.first_name, message.from_user.last_name, message.text
     )
     return log_str
 

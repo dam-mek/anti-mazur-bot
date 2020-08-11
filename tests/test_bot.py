@@ -1,4 +1,4 @@
-from flask import Flask, request
+from flask import Flask
 from os import environ
 from time import gmtime, asctime
 from email.mime.multipart import MIMEMultipart
@@ -7,8 +7,7 @@ import smtplib
 import telebot
 
 from synonym import parserSynonym
-import messages
-import markups
+from stuff import markups, messages
 
 # TODO
 #  1) Синонимы (допилить чуть Engine)
@@ -25,7 +24,7 @@ bot = telebot.TeleBot(token)
 @bot.message_handler(commands=['start'])
 def start_message(message):
     send_mail(message)
-    with open('log.log', 'a') as file:
+    with open('../log.log', 'a') as file:
         file.write('INFO:START:' + create_log_str(message) + '\n')
     bot.send_message(chat_id=message.chat.id, text=messages.START, reply_markup=markups.source_markup,
                      parse_mode='markdown')
@@ -35,7 +34,7 @@ def start_message(message):
 
 @bot.message_handler(commands=['help'])
 def help_message(message):
-    with open('log.log', 'a') as file:
+    with open('../log.log', 'a') as file:
         file.write('INFO:HELP:' + create_log_str(message) + '\n')
     bot.send_message(chat_id=message.chat.id, text=messages.HELP, reply_markup=markups.source_markup,
                      parse_mode='markdown')
@@ -43,7 +42,7 @@ def help_message(message):
 
 @bot.message_handler(commands=['about'])
 def about_message(message):
-    with open('log.log', 'a') as file:
+    with open('../log.log', 'a') as file:
         file.write('INFO:ABOUT:' + create_log_str(message) + '\n')
     bot.send_message(chat_id=message.chat.id, text=messages.ABOUT, reply_markup=markups.source_markup,
                      parse_mode='markdown')
@@ -51,7 +50,7 @@ def about_message(message):
 
 @bot.message_handler(commands=['feedback'])
 def feedback_message(message):
-    with open('log.log', 'a') as file:
+    with open('../log.log', 'a') as file:
         file.write('INFO:FEED:' + create_log_str(message) + '\n')
     bot.send_message(chat_id=message.chat.id, text=messages.FEEDBACK, reply_markup=markups.source_markup,
                      parse_mode='markdown')
@@ -62,10 +61,10 @@ def feedback_message(message):
     if message.from_user.username != 'dam_mek':
         bot.send_message(chat_id=message.chat.id, text='*Ты чо удумал?!*', reply_markup=markups.source_markup,
                          parse_mode='markdown')
-        with open('log.log', 'a') as file:
+        with open('../log.log', 'a') as file:
             file.write('INFO:LOG:' + create_log_str(message) + '\n')
         return
-    filename = 'log.log'
+    filename = '../log.log'
     with open(filename, 'r') as file:
         global password
         email = 'denisov_aa@gkl-kemerovo.ru'
@@ -95,7 +94,7 @@ def feedback_message(message):
 
 @bot.message_handler(content_types=['text'])
 def dialogue(message):
-    with open('log.log', 'a') as file:
+    with open('../log.log', 'a') as file:
         file.write('INFO:DIAL:' + create_log_str(message) + '\n')
     if do_prikol(message):
         return
@@ -109,14 +108,14 @@ def dialogue(message):
 
 @bot.message_handler(content_types=['video_note'])
 def video(message):
-    with open('log.log', 'a') as file:
+    with open('../log.log', 'a') as file:
         file.write('INFO:VIDEO:' + create_log_str(message) + '\n')
     bot.send_message(chat_id=message.chat.id, text=messages.video, reply_markup=markups.source_markup,
                      parse_mode='markdown')
 
 
 def ask_text(message):
-    with open('log.log', 'a') as file:
+    with open('../log.log', 'a') as file:
         file.write('INFO:ASK:' + create_log_str(message) + '\n')
     if message.text is None:
         msg = bot.send_message(chat_id=message.chat.id, text=messages.ASK_EXACTLY_TEXT, parse_mode='markdown')
@@ -135,7 +134,7 @@ def ask_text(message):
     bot.delete_message(chat_id=message.chat.id, message_id=msg.message_id)
     bot.send_message(chat_id=message.chat.id, text=text,
                      reply_markup=markups.source_markup)
-    with open('log.log', 'a') as file:
+    with open('../log.log', 'a') as file:
         file.write(f'INFO:RESULT:MSG_ID-{message.message_id}:' + text + '\n')
 
 

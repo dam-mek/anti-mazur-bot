@@ -1,13 +1,12 @@
 from lxml import html
 
 
-def convert_link0(a):
-    a = a.replace('ё', 'е')
-    a = a.replace('Ё', 'Е')
-    return '/' + a[0].upper() + '/' + a
+def create_urls_synonymonline(word):
+    word = word.replace('ё', 'е').replace('Ё', 'Е')
+    return 'https://synonymonline.ru' + '/' + word[0].upper() + '/' + word
 
 
-def post0(site):
+def get_synonyms_synonymonline(site):
     site = html.fromstring(site)
     synonyms = site.xpath('.//ol[@class="synonyms-list row"]/li/span/text()')
     words = []
@@ -17,13 +16,28 @@ def post0(site):
     return words
 
 
-def convert_link1(a):
-    return '/s/' + a
+def create_urls_sinonim(word):
+    return 'https://sinonim.org' + '/s/' + word
 
 
-def post1(site):
+def get_synonyms_sinonim(site):
     site = html.fromstring(site)
     synonyms = site.xpath('.//table/tr/td[2]/a/text()')
+    words = []
+    for i in range(min(5, len(synonyms))):
+        if len(synonyms[i].split()) == 1:
+            words.append(synonyms[i])
+    if words:
+        return words
+
+
+def create_urls_thesaurus(word):
+    return 'https://www.thesaurus.com/browse/' + word
+
+
+def get_synonyms_thesaurus(site):
+    site = html.fromstring(site)
+    synonyms = site.xpath('.//ul[@class="css-17d6qyx-WordGridLayoutBox et6tpn80"]/li/span/a/text()')
     words = []
     for i in range(min(5, len(synonyms))):
         if len(synonyms[i].split()) == 1:

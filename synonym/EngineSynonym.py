@@ -518,15 +518,17 @@ class FunctionsOfParsingWord(Staff):
 
 
 class SynonymOnline(FunctionsOfParsingWord, FunctionsOfParsingSyn):
-    urls = []
-    posts = []
-    convert_link = []
-    count = 0
+    create_urls_ru = []
+    get_synonyms_ru = []
+    count_ru = 0
+    create_urls_en = []
+    get_synonyms_en = []
+    count_en = 0
 
     def __init__(self):
         self.session = requests.session()
 
-    def get(self, word):
+    def get_ru(self, word):
         word = word.lower()
         site = self._bring_site(word)
         if site is None:
@@ -543,9 +545,8 @@ class SynonymOnline(FunctionsOfParsingWord, FunctionsOfParsingSyn):
 
         started_form = self._to_started_form(site)
         # print('\033[35mstarted\033[0m')
-        syn_words = self._find(started_form)
+        syn_words = self._find_syns_ru(started_form)
         # print('\033[35mfound\033[0m')
-
         while syn_words:
             syn_word = syn_words.pop(randint(0, len(syn_words)-1))
             # print(syn_word, end=' ')
@@ -560,10 +561,19 @@ class SynonymOnline(FunctionsOfParsingWord, FunctionsOfParsingSyn):
             return syn_word
         return word
 
-    def _find(self, word):
+    def get_en(self, word):
+        word = word.lower()
+        # print('\033[35mstarted\033[0m')
+        syn_words = self._find_syns_en(word)
+        # print('\033[35mfound\033[0m')
+        if syn_words:
+            return syn_words.pop(randint(0, len(syn_words)-1))
+        return word
+
+    def _find_syns_ru(self, word):
         words = []
-        for i in range(self.count):
-            link = self.urls[i] + SynonymOnline.convert_link[i](word)
+        for i in range(self.count_ru):
+            link = self.create_urls_ru[i](word)
             error = 'fuck'
             while error is not None:
                 try:
@@ -575,14 +585,37 @@ class SynonymOnline(FunctionsOfParsingWord, FunctionsOfParsingSyn):
             if site.status_code == 404:
                 # print('\033[31mError:', word, i)
                 continue
-            synonyms = SynonymOnline.posts[i](site.text)
+            synonyms = self.get_synonyms_ru[i](site.text)
             if synonyms is not None:
                 words.extend(synonyms)
         # s = ''
         # for x in words:
         #     s += str(x) + ', '
         # print('\033[34m' + s[:-2] + '\033[0m')
-        words = list(set(words))
+        return words
+
+    def _find_syns_en(self, word):
+        words = []
+        for i in range(self.count_en):
+            link = self.create_urls_en[i](word)
+            error = 'fuck'
+            while error is not None:
+                try:
+                    site = self.session.get(link, headers=headers)
+                    error = None
+                except requests.exceptions.ConnectionError as e:
+                    error = e
+                    print('\033[31m' + str(error))
+            if site.status_code == 404:
+                # print('\033[31mError:', word, i)
+                continue
+            synonyms = self.get_synonyms_en[i](site.text)
+            if synonyms is not None:
+                words.extend(synonyms)
+        # s = ''
+        # for x in words:
+        #     s += str(x) + ', '
+        # print('\033[34m' + s[:-2] + '\033[0m')
         return words
 
     def _bring_site(self, word):
@@ -599,11 +632,15 @@ class SynonymOnline(FunctionsOfParsingWord, FunctionsOfParsingSyn):
                 break
         return site
 
-    def add_site(self, link, post, convert_link):
-        self.urls.append(link)
-        self.posts.append(post)
-        self.convert_link.append(convert_link)
-        self.count += 1
+    def add_site_ru(self, create_url, get_synonym):
+        self.create_urls_ru.append(create_url)
+        self.get_synonyms_ru.append(get_synonym)
+        self.count_ru += 1
+
+    def add_site_en(self, create_url, get_synonym):
+        self.create_urls_en.append(create_url)
+        self.get_synonyms_en.append(get_synonym)
+        self.count_en += 1
 
     @staticmethod
     def _to_started_form(site):

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from synonym import EngineSynonym, ExtraStaff
-
+from string import ascii_letters
 
 # TODO
 #  1) проверять регист букв в слове: слова могут быть в прописном шрифте (ТЕКСТ), только первая бука (Текст),
@@ -17,7 +17,7 @@ def convert_string2list(s):
     converted = []
     alpha = False
     for x in s:
-        if x.isalpha() or x == '-':
+        if x.isalpha() or x == '\'':
             if alpha:
                 converted[-1] += x
             else:
@@ -33,8 +33,9 @@ def convert_string2list(s):
 
 
 app = EngineSynonym.SynonymOnline()
-app.add_site('https://synonymonline.ru', ExtraStaff.post0, ExtraStaff.convert_link0)
-app.add_site('https://sinonim.org', ExtraStaff.post1, ExtraStaff.convert_link1)
+app.add_site_ru(ExtraStaff.create_urls_synonymonline, ExtraStaff.get_synonyms_synonymonline)
+app.add_site_ru(ExtraStaff.create_urls_sinonim, ExtraStaff.get_synonyms_sinonim)
+app.add_site_en(ExtraStaff.create_urls_thesaurus, ExtraStaff.get_synonyms_thesaurus)
 
 
 def easter_egg(word):
@@ -53,20 +54,21 @@ def main(text):
         egg = easter_egg(symbols)
         if egg is not None:
             added = egg
-        elif symbols.isalpha() and len(symbols) > 2:
-            # print(symbols)
-            syn = app.get(symbols)
+        elif len(symbols) <= 2 or not symbols.isalpha():
+            added = symbols
+        else:
+            i += 1
+            if symbols[0] in ascii_letters:
+                syn = app.get_en(symbols)
+            else:
+                syn = app.get_ru(symbols)
             if symbols.isupper():
                 syn = syn.upper()
             elif symbols.istitle():
                 syn = syn.capitalize()
             elif symbols.islower():
                 syn = syn.lower()
-            # print(syn)
-            i += 1
             added = syn
-        else:
-            added = symbols
         new_text += added
         percent = round((i+1)/(len(list_text)+1)*100)
         yield percent
