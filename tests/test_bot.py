@@ -171,7 +171,7 @@ def send_mail(message):
     msg = MIMEMultipart()
     msg['From'] = email
     msg['To'] = email
-    msg['Subject'] = 'Logging. ' + message.from_user.username + ' sent a message to the bot!'
+    msg['Subject'] = 'Logging. ' + str(message.from_user.username) + ' sent a message to the bot!'
     text_message = create_log_str(message)
     msg.attach(MIMEText(text_message, 'plain'))
     mail_account.send_message(from_addr=email, to_addrs=msg['To'], msg=msg)

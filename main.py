@@ -75,7 +75,7 @@ def feedback_message(message):
         f.add_header('Content-Disposition', 'attachment', filename=filename)
         msg.attach(f)
 
-        text_message = 'Логи за ' + asctime()
+        text_message = f'Логи за {asctime()}'
         msg.attach(MIMEText(text_message, 'plain'))
         mail_account.send_message(from_addr=email, to_addrs=msg['To'], msg=msg)
         mail_account.quit()
@@ -125,7 +125,7 @@ def ask_text(message):
     bot.send_message(chat_id=message.chat.id, text=text,
                      reply_markup=markups.source_markup)
     with open('log.log', 'a') as file:
-        file.write(f'RESULT:MSG_ID-{message.message_id}:' + text + '\n')
+        file.write(f'RESULT:MSG_ID-{message.message_id}:{text}\n')
 
 
 def do_prikol(msg):
@@ -161,7 +161,7 @@ def send_mail(message):
     msg = MIMEMultipart()
     msg['From'] = email
     msg['To'] = email
-    msg['Subject'] = 'Logging. ' + message.from_user.username + ' sent a message to the bot!'
+    msg['Subject'] = f'Logging. {message.from_user.username} {message.from_user.first_name} sent a message to the bot!'
     text_message = create_log_str(message)
     msg.attach(MIMEText(text_message, 'plain'))
     mail_account.send_message(from_addr=email, to_addrs=msg['To'], msg=msg)
