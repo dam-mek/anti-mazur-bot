@@ -95,7 +95,7 @@ class FunctionsOfParsingSyn(Staff):
 
     def get_syn(self, site):
         gender = site.xpath('//*[@id="fwi_gram1"]/span/p/span[4]')[0].text
-        if gender is not None:
+        if gender is not None and gender[0].lower() in self._genders:
             gender = self._genders[gender[0].lower()]
         self.syn_information['gender'] = gender
         sections = site.xpath('//span[@class="sforms_src"]')
@@ -322,7 +322,7 @@ class FunctionsOfParsingWord(Staff):
 
     def parse_sections(self, site, word):
         gender = site.xpath('//*[@id="fwi_gram1"]/span/p/span[4]')[0].text
-        if gender is not None:
+        if gender is not None and gender[0].lower() in self._genders:
             gender = self._genders[gender[0].lower()]
         self.information['gender'] = gender
         sections = site.xpath('//span[@class="sforms_src"]')
